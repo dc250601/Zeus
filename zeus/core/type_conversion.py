@@ -1,20 +1,20 @@
 import numpy as np
 from .enums import Backend, Layout 
-from .array import ZeusArray
+# from .array import ZeusArray
 
-def dense_to_sparse(dense_array: np.ndarray | ZeusArray,
-                    backend: Backend = Backend.CPU
-                    ) -> ZeusArray:
+# def dense_to_sparse(dense_array: np.ndarray | ZeusArray,
+#                     backend: Backend = Backend.CPU
+#                     ) -> ZeusArray:
     
-    if isinstance(dense_array, ZeusArray):
-        assert dense_array.type == Layout.Dense, "Input ZeusArray must be of type Dense"
-        data = dense_array.data
+#     if isinstance(dense_array, ZeusArray):
+#         assert dense_array.type == Layout.Dense, "Input ZeusArray must be of type Dense"
+#         data = dense_array.data
         
-    assert backend == Backend.CPU, "Currently only CPU backend is supported"
+#     assert backend == Backend.CPU, "Currently only CPU backend is supported"
     
  
  
-def _single_element_dense_to_sparse(dense_array : np.ndarray) -> ZeusArray:
+def _dense_to_sparse(dense_array : np.ndarray):
     
     """
     Convert a single element from dense layout to sparse layout
@@ -27,14 +27,9 @@ def _single_element_dense_to_sparse(dense_array : np.ndarray) -> ZeusArray:
     non_zero_coord = np.where(dense_array != 0)[0]
     sparse_array = dense_array[non_zero_coord]
     
-    return ZeusArray(
-        data = sparse_array,
-        coordinates=non_zero_coord,
-        shape=array_shape,
-        type=Layout.Sparse       
-    )
-    
-def _single_element_sparse_to_dense(zeus_array: ZeusArray) -> ZeusArray:
+    return sparse_array,non_zero_coord,array_shape
+
+def _sparse_to_dense(zeus_array):
     
     """
     Convert a single element from sparse layout to dense layout
@@ -45,10 +40,8 @@ def _single_element_sparse_to_dense(zeus_array: ZeusArray) -> ZeusArray:
     dense_array[zeus_array.coordinates] = zeus_array.data
     dense_array = np.reshape(dense_array,zeus_array.shape)
     
-    return ZeusArray(
-        data = dense_array,
-        type=Layout.Dense
-    )
+    return dense_array
+    
         
         
          

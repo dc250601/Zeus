@@ -2,7 +2,9 @@ import numpy as np
 from .enums import Layout
 from collections.abc import Sequence
 import warnings
-
+import blosc
+from .compression import ZeusCompressedObject
+from .type_conversion import _dense_to_sparse, _sparse_to_dense
 # from ._dense_to_sparse
 
 class ZeusArray:
@@ -13,11 +15,12 @@ class ZeusArray:
         data: list|np.ndarray = None,
         coordinates: list|np.ndarray = None,
         type: Layout = Layout.Sparse,
-        shape = None,
+        shape = None
         ):
+        
 
-        self.data = self.compress_float(data)
-        self.coordinates = self.compress_int(coordinates, unsigned=True)        
+        self.data = ZeusArray.compress_float(data)
+        self.coordinates = ZeusArray.compress_int(coordinates, unsigned=True)        
         self.type = type
         
         if type == Layout.Sparse:
@@ -40,7 +43,7 @@ class ZeusArray:
             bytes = self.data.nbytes
         return bytes
     
-    
+
     @staticmethod
     def compress_int(x: np.array,
                  unsigned:bool = False):
@@ -72,8 +75,8 @@ class ZeusArray:
                     return np.astype(x, type)
         
         else:
-            max_value = x.max()
-            min_value = x.min()
+            max_value = x.max
+            min_value = x.min
             
             for type in dtypes:
                 if max_value < np.iinfo(type).max() and min_value > np.iinfo(type).min():
@@ -106,13 +109,54 @@ class ZeusArray:
         
         warnings.warn("[zeus-core] No suitable datatypes found for compression, returning original array")
         return x
+    
+    @staticmethod
+    def compress_array(zeus_array,
+                       clevel = 5,
+                       shuffle = blosc.BITSHUFFLE,
+                       cname = "zstd"
+                       ):
+        
+        zeus_array.data = ZeusCompressedObject(data = zeus_array.data,
+                                               clevel = clevel,
+                                               compression_type = cname,
+                                               shuffle=shuffle) 
+        
+        zeus_array.coordinates = ZeusCompressedObject(data = zeus_array.coordinates,
+                                                      clevel = clevel,
+                                                      compression_type = cname,
+                                                      shuffle=shuffle)
         
         
+        return zeus_array
+    
+    @staticmethod
+    def decompress_array(zeus_array):
+        zeus_array.data = np.array(zeus_array.data)
+        zeus_array.coordinates = np.array(zeus_array.coordinates)
+        return zeus_array
+    
+    def __array__(self):
+        return _sparse_to_dense(ZeusArray(
+            data =  np.array(self.data),
+            coordinates= np.array(self.coordinates),
+            type = self.type,
+            shape = self.shape
+        ))
         
-        
-
-
-
+    @staticmethod
+    def create_zeus_array(data):
+       
+       sparse_array,non_zero_coord,array_shape = _dense_to_sparse(data) 
+       
+       return ZeusArray(
+           data=sparse_array,
+           coordinates=non_zero_coord,
+           shape=array_shape,
+           type=Layout.Sparse
+           )
+       
+    
 class ZeusDataset:
     """
     This class holds a collection of  Zeus Arrays into a single continuous memory block.
