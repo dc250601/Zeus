@@ -1,7 +1,6 @@
 import numpy as np
 from .enums import Backend, Layout 
 from .array import ZeusArray
-from .index import index
 
 def dense_to_sparse(dense_array: np.ndarray | ZeusArray,
                     backend: Backend = Backend.CPU
@@ -15,11 +14,13 @@ def dense_to_sparse(dense_array: np.ndarray | ZeusArray,
     
  
  
-def _single_element_dense_to_sparse(dense_array: np.ndarray) -> ZeusArray:
+def _single_element_dense_to_sparse(dense_array : np.ndarray) -> ZeusArray:
     
     """
     Convert a single element from dense layout to sparse layout
     """
+    
+    
     
     array_shape = dense_array.shape
     dense_array = dense_array.flatten()
@@ -30,7 +31,7 @@ def _single_element_dense_to_sparse(dense_array: np.ndarray) -> ZeusArray:
         data = sparse_array,
         coordinates=non_zero_coord,
         shape=array_shape,
-        type=Layout.Dense       
+        type=Layout.Sparse       
     )
     
 def _single_element_sparse_to_dense(zeus_array: ZeusArray) -> ZeusArray:
@@ -40,7 +41,9 @@ def _single_element_sparse_to_dense(zeus_array: ZeusArray) -> ZeusArray:
     """
     assert zeus_array.type == Layout.Sparse, "Cannot convert non sparse layout to dense"
     dense_array = np.zeros(zeus_array.shape)
+    dense_array = dense_array.flatten()
     dense_array[zeus_array.coordinates] = zeus_array.data
+    dense_array = np.reshape(dense_array,zeus_array.shape)
     
     return ZeusArray(
         data = dense_array,
