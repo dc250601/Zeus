@@ -1,6 +1,5 @@
 import numpy as np
 from .enums import Layout
-from collections.abc import Sequence
 import warnings
 import blosc
 from .compression import ZeusCompressedObject
@@ -156,20 +155,4 @@ class ZeusArray:
            type=Layout.Sparse
            )
        
-    
-class ZeusDataset:
-    """
-    This class holds a collection of  Zeus Arrays into a single continuous memory block.
-    """
-    
-    def __init__(
-        self,
-        element_list: Sequence[ZeusArray]
-    ):
-        self.data_block = None
-        self.coordinate_block = None
-        self.shape_block = None
-        self.offset_block = None
-        
-        self.create_ZeusDataset()
     
