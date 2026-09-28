@@ -201,6 +201,19 @@ class ContiguousBlocks:
         return block
     @property
     def nbytes(self):
-        return self.data.nbytes + self.offsets.nbytes    
+        
+        b = 0
+        
+        if isinstance(self.data,bytes):
+            b += len(self.data)
+        else:
+            b += self.data.nbytes
+            
+        if isinstance(self.offsets,bytes):
+            b += len(self.offsets)
+        else:
+            b += self.offsets.nbytes
+        
+        return b    
     
     
