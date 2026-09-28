@@ -96,7 +96,7 @@ class ZeusCompressedObject:
             dtype=self.dtype
         ).reshape(self.shape)
         
-    def __array__(self,dtype=None, copy=None),:
+    def __array__(self,dtype=None, copy=None):
         return self.decompress()
     
     @property
