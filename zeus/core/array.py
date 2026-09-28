@@ -135,10 +135,14 @@ class ZeusArray:
         zeus_array.coordinates = np.array(zeus_array.coordinates)
         return zeus_array
     
-    def __array__(self):
+    def __array__(self, dtype=None, copy=None):
         return _sparse_to_dense(ZeusArray(
-            data =  np.array(self.data),
-            coordinates= np.array(self.coordinates),
+            data =  np.array(self.data,
+                             dtype=dtype,
+                             copy=copy),
+            coordinates= np.array(self.coordinates,
+                                  dtype=dtype,
+                                  copy=copy),
             type = self.type,
             shape = self.shape
         ))

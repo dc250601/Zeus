@@ -47,7 +47,7 @@ class ZeusEncodedObject:
         
         return decoded
         
-    def __array__(self):
+    def __array__(self, dtype=None, copy=None):
         return self.decode()
     
     @property
@@ -96,7 +96,7 @@ class ZeusCompressedObject:
             dtype=self.dtype
         ).reshape(self.shape)
         
-    def __array__(self):
+    def __array__(self,dtype=None, copy=None),:
         return self.decompress()
     
     @property

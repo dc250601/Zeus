@@ -83,7 +83,7 @@ class ZeusDataset:
             block = dataset.coordinate_block
         )
         
-        dataset.shape_bloc = ContiguousBlocks.decompress_contiguous_array(
+        dataset.shape_block = ContiguousBlocks.decompress_contiguous_array(
             block = dataset.shape_block
             )
         dataset.is_compressed = False
@@ -145,7 +145,10 @@ class ContiguousBlocks:
         ## To be made mutithreaded in the future
         
         compressed_seq = []
+        
         last_offset = 0
+        last_compress_offset = 0
+        
         for i in range(block.offsets.shape[0]):
             data = block.data[last_offset:block.offsets[i]]
             
@@ -160,8 +163,10 @@ class ContiguousBlocks:
             
             
             compressed_seq.append(compresed_unit)
-            last_offset += len(compresed_unit)
-            block.offsets[i] = last_offset
+            
+            last_offset = block.offsets[i]
+            last_compress_offset += len(compresed_unit)
+            block.offsets[i] = last_compress_offset
         
         block.data = b"".join(compressed_seq) 
         block.is_compressed = True
@@ -177,18 +182,23 @@ class ContiguousBlocks:
         
         decompressed_seq = []
         last_offset = 0
+        last_decompressed_offset = 0
+        
         for i in range(block.offsets.shape[0]):
             data = np.frombuffer(blosc.decompress(block.data[last_offset:block.offsets[i]]),
                                  dtype=block.dtype
                                  )
             decompressed_seq.append(data)
-            last_offset += len(data)
-            block.offsets[i] = last_offset
+            
+            last_offset = block.offsets[i]
+            last_decompressed_offset += len(data)
+            block.offsets[i] = last_decompressed_offset
             
             
         block.data = np.concatenate(decompressed_seq)
         block.is_compressed = False
         
+        return block
     @property
     def nbytes(self):
         return self.data.nbytes + self.offsets.nbytes    
