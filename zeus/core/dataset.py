@@ -4,90 +4,98 @@ from collections.abc import Sequence
 from .compression import ZeusCompressedObject
 import warnings
 import blosc
-class ZeusDataset:
+class ZeusShard:
     """
     This class holds a collection of  Zeus Arrays into a single continuous memory block.
     """
     
     def __init__(
         self,
-        element_list: Sequence[ZeusArray]
+        data_block = None,
+        coordinate_block = None,
+        shape_block = None,
+        is_compressed = None,
     ):
-        self.data_block = None
-        self.coordinate_block = None
-        self.shape_block = None
-        self.offset_block = None
+        self.data_block = data_block
+        self.coordinate_block = coordinate_block
+        self.shape_block = shape_block
         
-        self.create_zeus_dataset(element_list)
-        self.is_compressed = False
-    
-       
-    def create_zeus_dataset(self,element_list):
-        
+        self.is_compressed = is_compressed
+     
+    @staticmethod
+    def CreateZeusShardFromList(element_list: Sequence[ZeusArray]):
         data_list = []
         coordinate_list = []
         shape_list = []
-         
+            
         for elem in element_list:
             data_list.append(elem.data)
             coordinate_list.append(elem.coordinates)
             shape_list.append(elem.shape)
         
-        self.data_block = ContiguousBlocks.create_block_from_list(data_list)
-        self.coordinate_block = ContiguousBlocks.create_block_from_list(coordinate_list)
-        self.shape_block = ContiguousBlocks.create_block_from_list(shape_list)
+        data_block = ContiguousBlocks.create_block_from_list(data_list)
+        coordinate_block = ContiguousBlocks.create_block_from_list(coordinate_list)
+        shape_block = ContiguousBlocks.create_block_from_list(shape_list)
+        
+        return ZeusShard(
+            data_block=data_block,
+            coordinate_block=coordinate_block,
+            shape_block=shape_block,
+            is_compressed=False
+            )
+        
         
     @property
     def nbytes(self):
         return self.data_block.nbytes + self.coordinate_block.nbytes + self.shape_block.nbytes 
 
     @staticmethod
-    def compress_dataset(
-        dataset,
+    def compress(
+        shard,
         clevel = 5,
         shuffle = blosc.BITSHUFFLE,
         compression_type = "zstd"):
         
-        dataset.data_block = ContiguousBlocks.compress_contiguous_array(
-            block = dataset.data_block,
+        shard.data_block = ContiguousBlocks.compress_contiguous_array(
+            block = shard.data_block,
             clevel = clevel,
             compression_type = compression_type,
             shuffle=shuffle
         )
         
-        dataset.coordinate_block = ContiguousBlocks.compress_contiguous_array(
-            block = dataset.coordinate_block,
+        shard.coordinate_block = ContiguousBlocks.compress_contiguous_array(
+            block = shard.coordinate_block,
             clevel = clevel,
             compression_type = compression_type,
             shuffle=shuffle
         )
         
-        dataset.shape_bloc = ContiguousBlocks.compress_contiguous_array(
-            block = dataset.shape_block,
+        shard.shape_bloc = ContiguousBlocks.compress_contiguous_array(
+            block = shard.shape_block,
             clevel = clevel,
             compression_type = compression_type,
             shuffle=shuffle
             )
-        dataset.is_compressed = True
-        return dataset
+        shard.is_compressed = True
+        return shard
     
     
     @staticmethod
-    def decompress_dataset(
-        dataset):
+    def decompress(
+        shard):
         
-        dataset.data_block = ContiguousBlocks.decompress_contiguous_array(
-            block = dataset.data_block)
+        shard.data_block = ContiguousBlocks.decompress_contiguous_array(
+            block = shard.data_block)
         
-        dataset.coordinate_block = ContiguousBlocks.decompress_contiguous_array(
-            block = dataset.coordinate_block
+        shard.coordinate_block = ContiguousBlocks.decompress_contiguous_array(
+            block = shard.coordinate_block
         )
         
-        dataset.shape_block = ContiguousBlocks.decompress_contiguous_array(
-            block = dataset.shape_block
+        shard.shape_block = ContiguousBlocks.decompress_contiguous_array(
+            block = shard.shape_block
             )
-        dataset.is_compressed = False
-        return dataset
+        shard.is_compressed = False
+        return shard
         
 
     def __len__(self):
@@ -96,8 +104,8 @@ class ZeusDataset:
     def __getitem__(self, key):
         
         if self.is_compressed:
-            warnings.warn("[zeus-core] Cannot iterate over compressed state, decompressing")
-            _ = ZeusDataset.decompress_dataset(self)
+            warnings.warn("[zeus-core] Iterating over compressed state currently not possible, decompressing !!")
+            _ = ZeusShard.decompress(self)
             
         if key == 0:
             data = self.data_block.data[0:self.data_block.offsets[key]]
@@ -116,17 +124,23 @@ class ZeusDataset:
 
 class ContiguousBlocks:
     
-    def __init__(self,data,offsets):
+    def __init__(self,
+                 data,
+                 offsets,
+                 is_compressed = None,
+                 dtype = None):
+        
         self.data = data
         self.offsets = offsets
-        self.is_compressed = None
-        self.dtype = None
+        self.is_compressed = is_compressed
+        self.dtype = dtype
+        
     @staticmethod
     def create_block_from_list(data_list):
         data, offsets = ContiguousBlocks.create_contiguous_array(data_list)
         
         return ContiguousBlocks(data=data,
-                                offsets=offsets
+                                offsets=offsets,
                                 )
     
     @staticmethod
