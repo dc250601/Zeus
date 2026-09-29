@@ -2,7 +2,7 @@ import numpy as np
 from .enums import Layout
 import warnings
 import blosc
-from .compression import ZeusCompressedObject
+from .compression import ZeusCompressedObject, compress_int, compress_float
 from .type_conversion import _dense_to_sparse, _sparse_to_dense
 # from ._dense_to_sparse
 
@@ -18,8 +18,8 @@ class ZeusArray:
         ):
         
 
-        self.data = ZeusArray.compress_float(data)
-        self.coordinates = ZeusArray.compress_int(coordinates, unsigned=True)        
+        self.data = compress_float(data)
+        self.coordinates = compress_int(coordinates, unsigned=True)        
         self.type = type
         
         if type == Layout.Sparse:
@@ -42,72 +42,6 @@ class ZeusArray:
             bytes = self.data.nbytes
         return bytes
     
-
-    @staticmethod
-    def compress_int(x: np.array,
-                 unsigned:bool = False):
-        """
-        The purpose of this function is to estimate the best dtype to reduce the precision
-        keeping the data lossless.
-        """
-        
-        u_dtypes = [np.uint8,
-            np.uint16,
-            np.uint32,
-            np.uint64
-            ]
-
-        dtypes = [
-            np.int8,
-            np.int16,
-            np.int32,
-            np.int64
-            ]
-    
-        assert np.issubdtype(x.dtype,np.integer), "Only interger compression is supported"
-        
-        if unsigned:
-            max_value = x.max()
-            
-            for type in u_dtypes:
-                if max_value < np.iinfo(type).max:
-                    return np.astype(x, type)
-        
-        else:
-            max_value = x.max
-            min_value = x.min
-            
-            for type in dtypes:
-                if max_value < np.iinfo(type).max() and min_value > np.iinfo(type).min():
-                    return np.astype(x,type)
-        warnings.warn("[zeus-core] No suitable datatypes found for compression, returning original array")
-        return x
-    
-    @staticmethod
-    def compress_float(x: np.array):
-        
-        """
-        Similar to the compress_int method but for floats
-        """
-        
-        if np.issubdtype(x.dtype,np.integer):
-            return self.compress_int(x)
-        
-        
-        if not np.issubdtype(x.dtype,np.floating):
-            return x
-        
-        dtypes = [np.float16,
-                  np.float32,
-                  np.float64,
-                  np.float128]
-        
-        for type in dtypes:
-            if np.array_equal(x, np.astype(x,type)):
-                return np.astype(x,type)
-        
-        warnings.warn("[zeus-core] No suitable datatypes found for compression, returning original array")
-        return x
     
     @staticmethod
     def compress_array(zeus_array,
