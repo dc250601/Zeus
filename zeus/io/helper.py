@@ -81,3 +81,11 @@ def validate_zeus_shard_file(path):
                 f"Invalid Zeus shard magic: {magic}"
             )
             
+
+def read_data_chunk(data, is_compressed,dtype=None):
+    
+    is_compressed is not None, "Cannot accept None values for compression flag" 
+    if is_compressed:
+        return data
+    else:
+        return np.frombuffer(data,dtype=dtype).copy()

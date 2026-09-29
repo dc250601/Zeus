@@ -42,12 +42,21 @@ def readshard(path):
         
         
         ############################################################
-        data = f.read(data_size)
+        
+        data = read_data_chunk(data = f.read(data_size),
+                               is_compressed=data_is_compressed,
+                               dtype=data_dtype
+                               )
 
-        data_offsets = np.frombuffer(
-            f.read(data_offsets_size),
-            dtype="<u8"
-        ).copy()    
+        data_offsets = read_data_chunk(data = f.read(data_offsets_size),
+                                       is_compressed=False,
+                                       dtype="<u8"
+                                       )
+        
+        # data_offsets = np.frombuffer(
+        #     f.read(data_offsets_size),
+        #     dtype="<u8"
+        # ).copy()    
 
 
         data_block = ContiguousBlocks(
@@ -58,12 +67,24 @@ def readshard(path):
         )
         ############################################################
         
-        coordinates = f.read(coordinate_size)
+        # coordinates = f.read(coordinate_size)
+        
+        coordinates = read_data_chunk(data = f.read(coordinate_size),
+                                      is_compressed=coordinate_is_compressed,
+                                      dtype = coordinate_dtype
+                                      )
+        
 
-        coordinate_offsets = np.frombuffer(
-            f.read(coordinate_offsets_size),
-            dtype="<u8"
-        ).copy()
+        # coordinate_offsets = np.frombuffer(
+        #     f.read(coordinate_offsets_size),
+        #     dtype="<u8"
+        # ).copy()
+        
+        
+        coordinate_offsets = read_data_chunk(data = f.read(coordinate_offsets_size),
+                                       is_compressed=False,
+                                       dtype="<u8"
+                                       )
         
         coordinate_block = ContiguousBlocks(
             data=coordinates,
@@ -72,12 +93,27 @@ def readshard(path):
             dtype=coordinate_dtype,
         )
         ############################################################
-        shape = f.read(shape_size)
-
-        shape_offsets = np.frombuffer(
-            f.read(shape_offsets_size),
+        # shape = f.read(shape_size)
+        
+        shape = read_data_chunk(
+            data = f.read(shape_size),
+            is_compressed=shape_is_compressed,
+            dtype=shape_dtype
+        )
+        
+        shape_offsets = read_data_chunk(
+            data = f.read(shape_offsets_size),
+            is_compressed=False,
             dtype="<u8"
-            ).copy()
+        )
+        
+        
+        # shape_offsets = np.frombuffer(
+        #     f.read(shape_offsets_size),
+        #     dtype="<u8"
+        #     ).copy()
+        
+        
         
         shape_block = ContiguousBlocks(
             data=shape,

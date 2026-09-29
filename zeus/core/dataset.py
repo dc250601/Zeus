@@ -21,6 +21,7 @@ class ZeusShard:
         self.shape_block = shape_block
         
         self.is_compressed = is_compressed
+        
      
     @staticmethod
     def CreateZeusShardFromList(element_list: Sequence[ZeusArray]):
@@ -127,20 +128,22 @@ class ContiguousBlocks:
     def __init__(self,
                  data,
                  offsets,
-                 is_compressed = None,
-                 dtype = None):
+                 is_compressed,
+                 dtype):
         
         self.data = data
         self.offsets = offsets
         self.is_compressed = is_compressed
         self.dtype = dtype
-        
+    
     @staticmethod
     def create_block_from_list(data_list):
         data, offsets = ContiguousBlocks.create_contiguous_array(data_list)
         
         return ContiguousBlocks(data=data,
                                 offsets=offsets,
+                                dtype=data.dtype,
+                                is_compressed=False
                                 )
     
     @staticmethod
@@ -184,7 +187,6 @@ class ContiguousBlocks:
         
         block.data = b"".join(compressed_seq) 
         block.is_compressed = True
-        block.dtype = data.dtype
         
         return block
         
