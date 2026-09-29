@@ -1,7 +1,7 @@
 import numpy as np
 from .array import ZeusArray
 from collections.abc import Sequence
-from .compression import ZeusCompressedObject
+from .compression import ZeusCompressedObject, compress_float, compress_int
 import warnings
 import blosc
 class ZeusShard:
@@ -34,9 +34,9 @@ class ZeusShard:
             coordinate_list.append(elem.coordinates)
             shape_list.append(elem.shape)
         
-        data_block = ContiguousBlocks.create_block_from_list(data_list)
-        coordinate_block = ContiguousBlocks.create_block_from_list(coordinate_list)
-        shape_block = ContiguousBlocks.create_block_from_list(shape_list)
+        data_block = ContiguousBlocks.create_block_from_list(data_list=data_list)
+        coordinate_block = ContiguousBlocks.create_block_from_list(data_list=coordinate_list)
+        shape_block = ContiguousBlocks.create_block_from_list(data_list=shape_list)
         
         return ZeusShard(
             data_block=data_block,
@@ -140,8 +140,8 @@ class ContiguousBlocks:
     def create_block_from_list(data_list):
         data, offsets = ContiguousBlocks.create_contiguous_array(data_list)
         
-        return ContiguousBlocks(data=data,
-                                offsets=offsets,
+        return ContiguousBlocks(data=compress_float(data),
+                                offsets=compress_float(offsets),
                                 dtype=data.dtype,
                                 is_compressed=False
                                 )
