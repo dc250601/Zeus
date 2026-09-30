@@ -2,6 +2,9 @@ import numpy as np
 from .magic import ZEUS_SHARD_MAGIC
 from .magic import ZEUS_SHARD_HEADER
 
+from .magic import ZEUS_ARCHIVE_HEADER
+from .magic import ZEUS_ARCHIVE_MAGIC
+
 def nbytes(x):
     return x.nbytes if hasattr(x, "nbytes") else len(x)
 
@@ -82,6 +85,51 @@ def validate_zeus_shard_file(path):
             )
             
 
+def validate_zeus_archive_file(path):
+    
+    with open(path, "rb") as f:
+        header_bytes = f.read(ZEUS_ARCHIVE_HEADER.size)
+        
+        if len(header_bytes) != ZEUS_ARCHIVE_HEADER.size:
+            raise ValueError("Invalid or truncated Zeus Archive file")
+        
+        (
+            magic,
+            
+            data_points_raw_dtype,
+            data_points_encoded_dtype,
+            data_points_lookup_dtype,
+            data_offsets_dtype,
+
+            coordinates_dtype,
+            coordinate_offsets_dtype,
+
+            shape_dtype,
+            shapes_offsets_dtype,
+
+            data_points_raw_size,
+            data_points_raw_offsets_size,
+            data_points_encoded_size,
+            data_points_encoded_offsets_size,
+            data_points_lookup_size,
+            data_offsets_size,
+
+            coordinates_size,
+            coordinate_offsets_size,
+
+            shapes_size,
+            shapes_offsets_size
+
+        ) = ZEUS_ARCHIVE_HEADER.unpack(header_bytes)
+
+        
+        if magic != ZEUS_ARCHIVE_MAGIC:
+            raise ValueError(
+                f"Invalid Zeus Archive magic: {magic}"
+            )
+            
+
+
 def read_data_chunk(data, is_compressed,dtype=None):
     
     is_compressed is not None, "Cannot accept None values for compression flag" 
@@ -89,3 +137,5 @@ def read_data_chunk(data, is_compressed,dtype=None):
         return data
     else:
         return np.frombuffer(data,dtype=dtype).copy()
+    
+    

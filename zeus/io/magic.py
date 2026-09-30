@@ -40,7 +40,9 @@ ZEUS_SHARD_HEADER = struct.Struct("<10sQQQB16sQQB16sQQB16s")
 # 16s : shape_offsets dtype
 #
 # Q   : data_points.raw size
+# Q   : data_points_raw_offsets size
 # Q   : data_points.encoded size
+# Q   : data_points_encoded_offsets size
 # Q   : data_points.lookup size
 # Q   : data_offsets size
 #
@@ -57,7 +59,7 @@ ZEUS_ARCHIVE_HEADER = struct.Struct(
     "16s16s16s16s"
     "16s16s"
     "16s16s"
-    "QQQQ"
+    "QQQQQQ"
     "QQ"
     "QQ"
 )

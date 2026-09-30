@@ -13,6 +13,9 @@ class ArchiveDataset:
         # flatened points and their offsets
         self.data_points = data_shard.data_block.data
         
+        self.data_points_raw_offsets = None ## Placeholders
+        self.data_points_encoded_offsets = None ## Placeholders
+        
         self.data_offsets = data_shard.data_block.offsets
         self.data_offsets_dtype = self.data_offsets.dtype
         
@@ -45,8 +48,8 @@ class ArchiveDataset:
         self.data_points_encoded_dtype = self.data_points.encoded.dtype
         
         ## The won't fit in the compression window hence sending to iterative module
-        self.data_points.raw = ArchiveDataset.__iterative_compressor(self.data_points.raw)
-        self.data_points.encoded = ArchiveDataset.__iterative_compressor(self.data_points.encoded)
+        self.data_points.raw, self.data_points_raw_offsets = ArchiveDataset.__iterative_compressor(self.data_points.raw)
+        self.data_points.encoded, self.data_points_encoded_offsets = ArchiveDataset.__iterative_compressor(self.data_points.encoded)
         
         self.data_offsets = ArchiveDataset.__compression_utility(self.data_offsets)
         self.coordinates = ArchiveDataset.__compression_utility(self.coordinates)
@@ -69,8 +72,11 @@ class ArchiveDataset:
                                                                      self.shapes_offsets_dtype)
         
         self.data_points.raw = ArchiveDataset.__iterative_decompressor(self.data_points.raw,
+                                                                       self.data_points_raw_offsets,
                                                                        self.data_points_raw_dtype)
+        
         self.data_points.encoded = ArchiveDataset.__iterative_decompressor(self.data_points.encoded,
+                                                                           self.data_points_encoded_offsets,
                                                                            self.data_points_encoded_dtype)
         
         self.data_points = np.array(self.data_points)
@@ -103,30 +109,44 @@ class ArchiveDataset:
         ITERATION_LENGTH = 1_000_000_000
         
         byte_stream = data.tobytes()
-        compressed_chunks = []
         
+        compressed_stream = bytearray()
+        offsets = []     
         for start in range(0,len(byte_stream),ITERATION_LENGTH):
             chunk = byte_stream[start:min(len(byte_stream),(start+ITERATION_LENGTH))]
             
-            compressed_chunks.append(
-                blosc.compress(chunk,
+            compressed_chunks = blosc.compress(
+                chunk,
                 typesize=data.dtype.itemsize,
                 clevel=9,
                 shuffle=blosc.SHUFFLE
                 ,cname="zstd")
-            )
             
-        return compressed_chunks
+            compressed_stream.extend(compressed_chunks)
+            offsets.append(len(compressed_chunks))
+        
+        offsets = np.cumulative_sum(offsets, dtype=np.dtype("<u8"))
+        return compressed_stream, offsets
         
     @staticmethod
-    def __iterative_decompressor(compressed_chunks,data_dtype):
+    def __iterative_decompressor(compressed_stream,
+                                 offsets,
+                                 data_dtype):
         
-        decompressed_array = []
         
-        for chunks in compressed_chunks:
-            decompressed_array.append(ArchiveDataset.__decompression_utility(chunks,data_dtype))
+        last_index = 0
+        
+        decompressed_stream = bytearray()
+        
+        for chunk_idx in range(len(offsets)):
+            chunk = compressed_stream[last_index:offsets[chunk_idx]]
+            last_index = offsets[chunk_idx]
             
-        return np.concatenate(decompressed_array,dtype=data_dtype)
+            chunk = blosc.decompress(chunk)
+            
+            decompressed_stream.extend(chunk)
+            
+        return np.frombuffer(decompressed_stream,dtype=data_dtype)
     
     @property
     def nbytes(self):

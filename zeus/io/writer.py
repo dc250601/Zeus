@@ -81,7 +81,9 @@ def writearchive(archive_data,path):
         encode_dtype(archive_data.shapes_offsets_dtype),
 
         nbytes(archive_data.data_points.raw),
+        nbytes(archive_data.data_points_raw_offsets),
         nbytes(archive_data.data_points.encoded),
+        nbytes(archive_data.data_points_encoded_offsets),
         nbytes(archive_data.data_points.lookup),
         nbytes(archive_data.data_offsets),
         
@@ -100,7 +102,9 @@ def writearchive(archive_data,path):
         f.write(header)
         
         f.write(archive_data.data_points.raw)
+        f.write(archive_data.data_points_raw_offsets)
         f.write(archive_data.data_points.encoded)
+        f.write(archive_data.data_points_encoded_offsets)
         f.write(archive_data.data_points.lookup)
         f.write(archive_data.data_offsets)
         
