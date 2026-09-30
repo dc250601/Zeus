@@ -187,7 +187,7 @@ def readArchive(path):
         )
 
 
-        data_points = ZeusEncodedObject.__new__(ZeusEncodedObject)
+        data_points = ZeusEncodedObject()
 
         data_points.raw = data_points_raw
         data_points.encoded = data_points_encoded
@@ -211,7 +211,7 @@ def readArchive(path):
 
         ############################################################
 
-        archive = ArchiveDataset.__new__(ArchiveDataset)
+        archive = ArchiveDataset()
 
         archive.data_points = data_points
 

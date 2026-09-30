@@ -7,36 +7,59 @@ import blosc
 
 class ArchiveDataset:
     
-    def __init__(self,data_shard=None):
+    def __init__(self):
         
-        #######
-        # flatened points and their offsets
-        self.data_points = data_shard.data_block.data
+        self.data_points = None
+        self.data_offsets = None
+        self.data_offsets_dtype = None
+        self.coordinates = None
+        self.coordinates_dtype = None
+        self.coordinate_offsets = None
+        self.coordinate_offsets_dtype = None
+        self.shapes = None
+        self.shape_dtype = None
+        self.shapes_offsets = None
+        self.shapes_offsets_dtype = None
+        self.is_compressed = None
         
         self.data_points_raw_offsets = None ## Placeholders
         self.data_points_encoded_offsets = None ## Placeholders
+    
+    @staticmethod
+    def CreateArchiveObjectFromShard(shard):
         
-        self.data_offsets = data_shard.data_block.offsets
-        self.data_offsets_dtype = self.data_offsets.dtype
+        archive_dataset = ArchiveDataset()
+        
+        archive_dataset.data_points = shard.data_block.data
+        
+        #######
+        # flatened points and their offsets
+        archive_dataset.data_points = shard.data_block.data
+        
+
+        
+        archive_dataset.data_offsets = shard.data_block.offsets
+        archive_dataset.data_offsets_dtype = archive_dataset.data_offsets.dtype
         
         #flatened coordinates of the sparse array
-        self.coordinates = data_shard.coordinate_block.data
-        self.coordinates_dtype = self.coordinates.dtype
+        archive_dataset.coordinates = shard.coordinate_block.data
+        archive_dataset.coordinates_dtype = archive_dataset.coordinates.dtype
         
-        self.coordinate_offsets = data_shard.coordinate_block.offsets
-        self.coordinate_offsets_dtype = self.coordinate_offsets.dtype
+        archive_dataset.coordinate_offsets = shard.coordinate_block.offsets
+        archive_dataset.coordinate_offsets_dtype = archive_dataset.coordinate_offsets.dtype
         
         # Shapes
-        self.shapes = data_shard.shape_block.data
-        self.shape_dtype = self.shapes.dtype
+        archive_dataset.shapes = shard.shape_block.data
+        archive_dataset.shape_dtype = archive_dataset.shapes.dtype
         
-        self.shapes_offsets = data_shard.shape_block.offsets
-        self.shapes_offsets_dtype = self.shapes_offsets.dtype
+        archive_dataset.shapes_offsets = shard.shape_block.offsets
+        archive_dataset.shapes_offsets_dtype = archive_dataset.shapes_offsets.dtype
         #######
-        self.is_compressed = False
+        archive_dataset.is_compressed = False
         
-        self.RunCompressionSequence()
-    
+        archive_dataset.RunCompressionSequence()    
+        
+        return archive_dataset
     
     def RunCompressionSequence(self):
         
@@ -87,7 +110,7 @@ class ArchiveDataset:
         
         z_data = ZeusShard.CreateZeusShardFromList(z_list)
         
-        return ArchiveDataset(z_data)
+        return ArchiveDataset.CreateArchiveObjectFromShard(z_data)
 
     @staticmethod
     def __compression_utility(data):
@@ -154,13 +177,8 @@ class ArchiveDataset:
             b = 0
             b += len(self.data_offsets) + len(self.coordinates) + len(self.coordinate_offsets)
             b += len(self.shapes) + len(self.shapes_offsets)
-            
-            for c in self.data_points.raw:
-                b += len(c)
-            
-            for c in self.data_points.encoded:
-                b += len(c)
-            
+            b += len(self.data_points.raw) + len(self.data_points.encoded)
+
             return b
         
         else:
