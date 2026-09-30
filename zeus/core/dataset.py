@@ -4,6 +4,9 @@ from collections.abc import Sequence
 from .compression import ZeusCompressedObject, compress_float, compress_int
 import warnings
 import blosc
+
+
+
 class ZeusShard:
     """
     This class holds a collection of  Zeus Arrays into a single continuous memory block.
@@ -71,12 +74,12 @@ class ZeusShard:
             shuffle=shuffle
         )
         
-        shard.shape_bloc = ContiguousBlocks.compress_contiguous_array(
-            block = shard.shape_block,
-            clevel = clevel,
-            compression_type = compression_type,
-            shuffle=shuffle
-            )
+        # shard.shape_bloc = ContiguousBlocks.compress_contiguous_array(
+        #     block = shard.shape_block,
+        #     clevel = clevel,
+        #     compression_type = compression_type,
+        #     shuffle=shuffle
+        #     )
         shard.is_compressed = True
         return shard
     
@@ -92,9 +95,9 @@ class ZeusShard:
             block = shard.coordinate_block
         )
         
-        shard.shape_block = ContiguousBlocks.decompress_contiguous_array(
-            block = shard.shape_block
-            )
+        # shard.shape_block = ContiguousBlocks.decompress_contiguous_array(
+        #     block = shard.shape_block
+        #     )
         shard.is_compressed = False
         return shard
         
@@ -140,8 +143,10 @@ class ContiguousBlocks:
     def create_block_from_list(data_list):
         data, offsets = ContiguousBlocks.create_contiguous_array(data_list)
         
-        return ContiguousBlocks(data=compress_float(data),
-                                offsets=compress_float(offsets),
+        data = compress_float(data)
+        
+        return ContiguousBlocks(data=data,
+                                offsets=offsets,
                                 dtype=data.dtype,
                                 is_compressed=False
                                 )
